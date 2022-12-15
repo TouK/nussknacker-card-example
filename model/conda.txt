@@ -1,0 +1,1 @@
+ conda install -y pandas jupyter matplotlib scikit-learn seaborn

@@ -1,0 +1,630 @@
+{
+  "metaData" : {
+    "id" : "CardTransaction",
+    "typeSpecificData" : {
+      "parallelism" : 1,
+      "spillStateToDisk" : true,
+      "useAsyncInterpretation" : null,
+      "checkpointIntervalInSeconds" : null,
+      "type" : "StreamMetaData"
+    },
+    "additionalFields" : null,
+    "subprocessVersions" : {
+      
+    }
+  },
+  "nodes" : [
+    {
+      "id" : "kafka",
+      "ref" : {
+        "typ" : "kafka",
+        "parameters" : [
+          {
+            "name" : "Topic",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "'cain.001'"
+            }
+          },
+          {
+            "name" : "Schema version",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "'latest'"
+            }
+          }
+        ]
+      },
+      "additionalFields" : {
+        "description" : null,
+        "layoutData" : {
+          "x" : 360,
+          "y" : 0
+        }
+      },
+      "type" : "Source"
+    },
+    {
+      "id" : "device",
+      "varName" : "device",
+      "value" : {
+        "language" : "spel",
+        "expression" : "#input.Document.Body.Environment.CustomerDevice.Device"
+      },
+      "additionalFields" : {
+        "description" : null,
+        "layoutData" : {
+          "x" : 360,
+          "y" : 180
+        }
+      },
+      "type" : "Variable"
+    },
+    {
+      "id" : "location",
+      "varName" : "location",
+      "value" : {
+        "language" : "spel",
+        "expression" : "#GEO.toPoint(\n    #CONV.toNumber(#device.Location.Latitude), \n    #CONV.toNumber(#device.Location.Longitude)\n)"
+      },
+      "additionalFields" : {
+        "description" : null,
+        "layoutData" : {
+          "x" : 360,
+          "y" : 360
+        }
+      },
+      "type" : "Variable"
+    },
+    {
+      "id" : "homeLocation",
+      "service" : {
+        "id" : "addresses",
+        "parameters" : [
+          {
+            "name" : "Table",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "'addresses'"
+            }
+          },
+          {
+            "name" : "Cache TTL",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "T(java.time.Duration).parse('PT1H')"
+            }
+          },
+          {
+            "name" : "Key column",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "'postal_code'"
+            }
+          },
+          {
+            "name" : "Key value",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "#input.Document.Body.Environment.Payer.Customer.Address.PostalCode"
+            }
+          }
+        ]
+      },
+      "output" : "home",
+      "additionalFields" : {
+        "description" : null,
+        "layoutData" : {
+          "x" : 360,
+          "y" : 540
+        }
+      },
+      "type" : "Enricher"
+    },
+    {
+      "id" : "customer",
+      "varName" : "customer",
+      "value" : {
+        "language" : "spel",
+        "expression" : "#input.Document.Body.Environment.Payer.Customer.CustomerIdentification"
+      },
+      "additionalFields" : {
+        "description" : null,
+        "layoutData" : {
+          "x" : 360,
+          "y" : 720
+        }
+      },
+      "type" : "Variable"
+    },
+    {
+      "id" : "verification",
+      "varName" : "verification",
+      "value" : {
+        "language" : "spel",
+        "expression" : "#input.Document.Body.Context.Verification.![#this.Type]"
+      },
+      "additionalFields" : {
+        "description" : null,
+        "layoutData" : {
+          "x" : 360,
+          "y" : 900
+        }
+      },
+      "type" : "Variable"
+    },
+    {
+      "id" : "retailer",
+      "varName" : "retailer",
+      "value" : {
+        "language" : "spel",
+        "expression" : "#input.Document.Body.Environment.Acquirer.Identification"
+      },
+      "additionalFields" : {
+        "description" : null,
+        "layoutData" : {
+          "x" : 360,
+          "y" : 1080
+        }
+      },
+      "type" : "Variable"
+    },
+    {
+      "id" : "repeatRetailer",
+      "outputVar" : "repeatRetailer",
+      "nodeType" : "aggregate-sliding",
+      "parameters" : [
+        {
+          "name" : "groupBy",
+          "expression" : {
+            "language" : "spel",
+            "expression" : "#customer"
+          }
+        },
+        {
+          "name" : "aggregator",
+          "expression" : {
+            "language" : "spel",
+            "expression" : "#AGG.set"
+          }
+        },
+        {
+          "name" : "aggregateBy",
+          "expression" : {
+            "language" : "spel",
+            "expression" : "#retailer"
+          }
+        },
+        {
+          "name" : "windowLength",
+          "expression" : {
+            "language" : "spel",
+            "expression" : "T(java.time.Duration).parse('P1D')"
+          }
+        },
+        {
+          "name" : "emitWhenEventLeft",
+          "expression" : {
+            "language" : "spel",
+            "expression" : "false"
+          }
+        }
+      ],
+      "additionalFields" : {
+        "description" : null,
+        "layoutData" : {
+          "x" : 360,
+          "y" : 1260
+        }
+      },
+      "type" : "CustomNode"
+    },
+    {
+      "id" : "previousLocation",
+      "outputVar" : "previousLocation",
+      "nodeType" : "previousValue",
+      "parameters" : [
+        {
+          "name" : "groupBy",
+          "expression" : {
+            "language" : "spel",
+            "expression" : "#customer"
+          }
+        },
+        {
+          "name" : "value",
+          "expression" : {
+            "language" : "spel",
+            "expression" : "#location"
+          }
+        }
+      ],
+      "additionalFields" : {
+        "description" : null,
+        "layoutData" : {
+          "x" : 360,
+          "y" : 1440
+        }
+      },
+      "type" : "CustomNode"
+    },
+    {
+      "id" : "score transaction",
+      "service" : {
+        "id" : "score_credit_card_transaction",
+        "parameters" : [
+          {
+            "name" : "distance_from_home",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "#GEO.distanceInKm(#location, #GEO.toPoint(#home.latitude, #home.longitude))"
+            }
+          },
+          {
+            "name" : "distance_from_last_transaction",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "#GEO.distanceInKm(#location, #previousLocation)"
+            }
+          },
+          {
+            "name" : "ratio_to_median_purchase_price",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "#input.Document.Body.Transaction.TransactionAmounts.TransactionAmount.Amount.amount / 15 "
+            }
+          },
+          {
+            "name" : "repeat_retailer",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "#repeatRetailer.contains(#retailer) ? 1 : 0"
+            }
+          },
+          {
+            "name" : "used_chip",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "#verification.contains(\"CRYP\") || #verification.contains(\"ACRQ\") ? 1 : 0"
+            }
+          },
+          {
+            "name" : "used_pin_number",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "#verification.contains(\"NPIN\") || #verification.contains(\"FPIN\") ? 1 : 0"
+            }
+          },
+          {
+            "name" : "online_order",
+            "expression" : {
+              "language" : "spel",
+              "expression" : "#input.Document.Body.Context.PointOfServiceContext.ECommerceIndicator ? 1 : 0"
+            }
+          }
+        ]
+      },
+      "output" : "predictionScore",
+      "additionalFields" : {
+        "description" : null,
+        "layoutData" : {
+          "x" : 360,
+          "y" : 1620
+        }
+      },
+      "type" : "Enricher"
+    },
+    {
+      "id" : "identification",
+      "varName" : "identification",
+      "value" : {
+        "language" : "spel",
+        "expression" : "#input.Document.Body.Transaction.TransactionIdentification.TransactionReference"
+      },
+      "additionalFields" : {
+        "description" : null,
+        "layoutData" : {
+          "x" : 360,
+          "y" : 1800
+        }
+      },
+      "type" : "Variable"
+    },
+    {
+      "defaultNext" : [
+      ],
+      "nexts" : [
+        {
+          "expression" : {
+            "language" : "spel",
+            "expression" : "#predictionScore == 1"
+          },
+          "nodes" : [
+            {
+              "nextFalse" : [
+                {
+                  "id" : "Reject with fraud",
+                  "ref" : {
+                    "typ" : "kafka",
+                    "parameters" : [
+                      {
+                        "name" : "Topic",
+                        "expression" : {
+                          "language" : "spel",
+                          "expression" : "'cain.002.response'"
+                        }
+                      },
+                      {
+                        "name" : "Schema version",
+                        "expression" : {
+                          "language" : "spel",
+                          "expression" : "'latest'"
+                        }
+                      },
+                      {
+                        "name" : "Key",
+                        "expression" : {
+                          "language" : "spel",
+                          "expression" : ""
+                        }
+                      },
+                      {
+                        "name" : "Raw editor",
+                        "expression" : {
+                          "language" : "spel",
+                          "expression" : "false"
+                        }
+                      },
+                      {
+                        "name" : "InitiatorTransactionIdentification",
+                        "expression" : {
+                          "language" : "spel",
+                          "expression" : "#identification"
+                        }
+                      },
+                      {
+                        "name" : "AuthorisationResult.Action.ActionType",
+                        "expression" : {
+                          "language" : "spel",
+                          "expression" : "'DISP'"
+                        }
+                      },
+                      {
+                        "name" : "AuthorisationResult.TransactionResponse.ResultDetails",
+                        "expression" : {
+                          "language" : "spel",
+                          "expression" : "'PINC'"
+                        }
+                      },
+                      {
+                        "name" : "AuthorisationResult.TransactionResponse.AdditionalResultInformation",
+                        "expression" : {
+                          "language" : "spel",
+                          "expression" : "'' + #retailer"
+                        }
+                      },
+                      {
+                        "name" : "AuthorisationResult.TransactionResponse.Result",
+                        "expression" : {
+                          "language" : "spel",
+                          "expression" : "'UNPR'"
+                        }
+                      }
+                    ]
+                  },
+                  "endResult" : null,
+                  "isDisabled" : null,
+                  "additionalFields" : {
+                    "description" : null,
+                    "layoutData" : {
+                      "x" : 360,
+                      "y" : 2340
+                    }
+                  },
+                  "type" : "Sink"
+                }
+              ],
+              "id" : "merchant whitelist",
+              "expression" : {
+                "language" : "spel",
+                "expression" : "{\"acqu1\", \"acqu2\", \"acqu3\", \"acqu4\", \"acqu5\"}.contains(#retailer)"
+              },
+              "isDisabled" : null,
+              "additionalFields" : {
+                "description" : null,
+                "layoutData" : {
+                  "x" : 180,
+                  "y" : 2160
+                }
+              },
+              "type" : "Filter"
+            },
+            {
+              "id" : "accept whitelist",
+              "ref" : {
+                "typ" : "kafka",
+                "parameters" : [
+                  {
+                    "name" : "Topic",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "'cain.002.response'"
+                    }
+                  },
+                  {
+                    "name" : "Schema version",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "'latest'"
+                    }
+                  },
+                  {
+                    "name" : "Key",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : ""
+                    }
+                  },
+                  {
+                    "name" : "Raw editor",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "false"
+                    }
+                  },
+                  {
+                    "name" : "InitiatorTransactionIdentification",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "#identification"
+                    }
+                  },
+                  {
+                    "name" : "AuthorisationResult.Action.ActionType",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "'DISP'"
+                    }
+                  },
+                  {
+                    "name" : "AuthorisationResult.TransactionResponse.ResultDetails",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "'NMBW'"
+                    }
+                  },
+                  {
+                    "name" : "AuthorisationResult.TransactionResponse.AdditionalResultInformation",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "\"OK-whitelist\""
+                    }
+                  },
+                  {
+                    "name" : "AuthorisationResult.TransactionResponse.Result",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "'APPR'"
+                    }
+                  }
+                ]
+              },
+              "endResult" : null,
+              "isDisabled" : null,
+              "additionalFields" : {
+                "description" : null,
+                "layoutData" : {
+                  "x" : 0,
+                  "y" : 2340
+                }
+              },
+              "type" : "Sink"
+            }
+          ]
+        },
+        {
+          "expression" : {
+            "language" : "spel",
+            "expression" : "true"
+          },
+          "nodes" : [
+            {
+              "id" : "acceptNoFraud",
+              "ref" : {
+                "typ" : "kafka",
+                "parameters" : [
+                  {
+                    "name" : "Topic",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "'cain.002.response'"
+                    }
+                  },
+                  {
+                    "name" : "Schema version",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "'latest'"
+                    }
+                  },
+                  {
+                    "name" : "Key",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : ""
+                    }
+                  },
+                  {
+                    "name" : "Raw editor",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "false"
+                    }
+                  },
+                  {
+                    "name" : "InitiatorTransactionIdentification",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "#identification"
+                    }
+                  },
+                  {
+                    "name" : "AuthorisationResult.Action.ActionType",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "'DISP'"
+                    }
+                  },
+                  {
+                    "name" : "AuthorisationResult.TransactionResponse.ResultDetails",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "'ACQS'"
+                    }
+                  },
+                  {
+                    "name" : "AuthorisationResult.TransactionResponse.AdditionalResultInformation",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "\"OK\""
+                    }
+                  },
+                  {
+                    "name" : "AuthorisationResult.TransactionResponse.Result",
+                    "expression" : {
+                      "language" : "spel",
+                      "expression" : "'APPR'"
+                    }
+                  }
+                ]
+              },
+              "endResult" : null,
+              "isDisabled" : null,
+              "additionalFields" : {
+                "description" : null,
+                "layoutData" : {
+                  "x" : 540,
+                  "y" : 2160
+                }
+              },
+              "type" : "Sink"
+            }
+          ]
+        }
+      ],
+      "id" : "fraud predicted",
+      "expression" : null,
+      "exprVal" : null,
+      "additionalFields" : {
+        "description" : null,
+        "layoutData" : {
+          "x" : 360,
+          "y" : 1980
+        }
+      },
+      "type" : "Switch"
+    }
+  ],
+  "additionalBranches" : [
+  ]
+}
