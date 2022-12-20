@@ -141,12 +141,14 @@ for count in itertools.count(1):
 
     customer = randrange(0, 500)
     code = codes[customer % len(codes)].replace("\n", "")
-    verification: list[str] = [
+    verification_modes: list[list[str]] = [
         ["NPIN"],
         ["NPIN", "CRYP"],
         ["CRYP"],
+        ["FPIN"],
+        ["FPIN", "CRYP"],
         []
-    ][randrange(0,4)]
+    ]
     send(datetime.now(),
          customer_id="id-{id}".format(id=customer),
          postal_code=code,
@@ -154,8 +156,8 @@ for count in itertools.count(1):
          amount=randrange(20, 30),
          lat=50 + randrange(-100, 100) / 100,
          lon=20 + randrange(-200, 200) / 100,
-         verification_modes=verification,
-         ecommerce=randrange(5) > 3)
+         verification_modes=verification_modes[randrange(0, len(verification_modes))],
+         ecommerce=randrange(5) > 2)
     time.sleep(0.01)
 
 producer.flush()

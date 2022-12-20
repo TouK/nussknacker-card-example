@@ -1,6 +1,6 @@
 {
   "metaData" : {
-    "id" : "CardTransaction",
+    "id" : "FraudScenario",
     "typeSpecificData" : {
       "parallelism" : 1,
       "spillStateToDisk" : true,
@@ -473,35 +473,35 @@
                     }
                   },
                   {
-                    "name" : "InitiatorTransactionIdentification",
+                    "name" : "ResultDetails",
                     "expression" : {
                       "language" : "spel",
-                      "expression" : "#identification"
+                      "expression" : "'UNBP'"
                     }
                   },
                   {
-                    "name" : "AuthorisationResult.Action.ActionType",
+                    "name" : "Action.ActionType",
                     "expression" : {
                       "language" : "spel",
                       "expression" : "'DISP'"
                     }
                   },
                   {
-                    "name" : "AuthorisationResult.TransactionResponse.ResultDetails",
+                    "name" : "TransactionIdentification",
                     "expression" : {
                       "language" : "spel",
-                      "expression" : "'NMBW'"
+                      "expression" : "#identification"
                     }
                   },
                   {
-                    "name" : "AuthorisationResult.TransactionResponse.AdditionalResultInformation",
+                    "name" : "AdditionalResultInformation",
                     "expression" : {
                       "language" : "spel",
-                      "expression" : "\"OK-whitelist\""
+                      "expression" : "'OK - whitelist'"
                     }
                   },
                   {
-                    "name" : "AuthorisationResult.TransactionResponse.Result",
+                    "name" : "Result",
                     "expression" : {
                       "language" : "spel",
                       "expression" : "'APPR'"
@@ -562,35 +562,35 @@
                     }
                   },
                   {
-                    "name" : "InitiatorTransactionIdentification",
+                    "name" : "ResultDetails",
                     "expression" : {
                       "language" : "spel",
-                      "expression" : "#identification"
+                      "expression" : "'ACTF'"
                     }
                   },
                   {
-                    "name" : "AuthorisationResult.Action.ActionType",
+                    "name" : "Action.ActionType",
                     "expression" : {
                       "language" : "spel",
                       "expression" : "'DISP'"
                     }
                   },
                   {
-                    "name" : "AuthorisationResult.TransactionResponse.ResultDetails",
+                    "name" : "TransactionIdentification",
                     "expression" : {
                       "language" : "spel",
-                      "expression" : "'ACQS'"
+                      "expression" : "#identification"
                     }
                   },
                   {
-                    "name" : "AuthorisationResult.TransactionResponse.AdditionalResultInformation",
+                    "name" : "AdditionalResultInformation",
                     "expression" : {
                       "language" : "spel",
                       "expression" : "\"OK\""
                     }
                   },
                   {
-                    "name" : "AuthorisationResult.TransactionResponse.Result",
+                    "name" : "Result",
                     "expression" : {
                       "language" : "spel",
                       "expression" : "'APPR'"
