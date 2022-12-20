@@ -2,8 +2,9 @@
 
 set -e
 
-# If dir parameter not provided, fallback to script's directory
-dir=${1:-$(dirname $0)}
+SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL:-localhost:3082}
+dir=$(dirname $0)
+
 resolved_dir=$(readlink -f $dir)
 echo "Registering schemas from $resolved_dir"
 cd $resolved_dir
@@ -15,12 +16,7 @@ function wrapWithSchemaRegistryMessage() {
 
 function createSchema() {
     NAME=$1
-    if [[ -z "${RELEASE}" ]]
-    then
-        wrapWithSchemaRegistryMessage $NAME | curl -d @- -H "Content-Type: application/vnd.schemaregistry.v1+json" http://localhost:3082/subjects/$NAME/versions -v
-    else
-        wrapWithSchemaRegistryMessage $NAME | kubectl exec -i deploy/$RELEASE-apicurio-registry -- curl -d @- -H "Content-type: application/json" http://localhost:8080/apis/ccompat/v6/subjects/$NAME/versions -v
-    fi
+    wrapWithSchemaRegistryMessage $NAME | curl -d @- -H "Content-Type: application/vnd.schemaregistry.v1+json" $SCHEMA_REGISTRY_URL/subjects/$NAME/versions -v
 }
 
 for file in $(ls *.json); do

@@ -25,9 +25,21 @@ services:
       context: ../generator
     environment:
       KAFKA_ADDRESS: kafka:9092
-      SCHEMA_REGISTRY_URL: http://schemaregistry:8081  
+      SCHEMA_REGISTRY_URL: http://schemaregistry:8081
+    depends_on:
+      init_schemas:
+        condition: service_completed_successfully
 
 
+  init_schemas:
+    container_name: nussknacker_fraud_initdb
+    build:
+      context: ../schemas
+    environment:
+      SCHEMA_REGISTRY_URL: http://schemaregistry:8081
+    depends_on:
+      schemaregistry:
+        condition: service_healthy
   designer:
     container_name: nussknacker_fraud_designer
     image: ${NUSSKNACKER_IMAGE-touk/nussknacker}:${NUSSKNACKER_VERSION-staging-latest}
@@ -52,7 +64,9 @@ services:
       - storage_flink:/opt/flink/data
       - storage_designer:/opt/nussknacker/storage
       - ${BASE_PATH}/nussknacker/nussknacker.conf:/opt/nussknacker/conf/nussknacker.conf
-
+    depends_on:
+      init_schemas:
+        condition: service_completed_successfully
   influxdb:
     container_name: nussknacker_fraud_influxdb
     hostname: influxdb
